@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HandDraw 3D — Menggambar dengan Tangan</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <span class="logo">✋</span>
+      <div>
+        <h1>HandDraw 3D</h1>
+        <p class="sub">Menggambar di ruang 3D dengan gerakan tangan</p>
+      </div>
+    </div>
+    <div id="status-bar">
+      <div id="status-dot"></div>
+      <span id="status-text">Klik "Mulai" untuk memulai</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Kiri: Kamera + Kontrol -->
+    <section class="left-panel">
+
+      <!-- Kamera preview kecil -->
+      <div class="cam-card">
+        <div id="cam-wrap">
+          <video id="video" autoplay muted playsinline></video>
+          <canvas id="cam-canvas"></canvas>
+          <div id="mode-indicator">
+            <span id="mode-dot"></span>
+            <span id="mode-label">—</span>
+          </div>
+          <div id="start-overlay">
+            <div class="start-icon">✋</div>
+            <h2>HandDraw 3D</h2>
+            <p>Gambar di ruang 3D hanya dengan gerakan tangan</p>
+            <button id="start-btn">▶ Mulai Kamera</button>
+            <small>Izinkan akses kamera saat diminta</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panduan gesture -->
+      <div class="card">
+        <div class="card-label">✋ Panduan Gesture</div>
+        <div class="gesture-list">
+          <div class="gesture-item">
+            <div class="g-icon draw">☝️</div>
+            <div>
+              <div class="g-name">Menggambar</div>
+              <div class="g-desc">Telunjuk berdiri saja</div>
+            </div>
+            <div class="g-status" id="gs-draw"></div>
+          </div>
+          <div class="gesture-item">
+            <div class="g-icon pause">✌️</div>
+            <div>
+              <div class="g-name">Jeda / Angkat</div>
+              <div class="g-desc">Telunjuk + Tengah (V)</div>
+            </div>
+            <div class="g-status" id="gs-pause"></div>
+          </div>
+          <div class="gesture-item">
+            <div class="g-icon erase">🤚</div>
+            <div>
+              <div class="g-name">Hapus Terakhir</div>
+              <div class="g-desc">Tangan terbuka penuh</div>
+            </div>
+            <div class="g-status" id="gs-erase"></div>
+          </div>
+          <div class="gesture-item">
+            <div class="g-icon rotate">👌</div>
+            <div>
+              <div class="g-name">Putar Kanvas</div>
+              <div class="g-desc">OK (ibu jari + telunjuk)</div>
+            </div>
+            <div class="g-status" id="gs-rotate"></div>
+          </div>
+          <div class="gesture-item">
+            <div class="g-icon clear">✊</div>
+            <div>
+              <div class="g-name">Hapus Semua</div>
+              <div class="g-desc">Kepalan tangan</div>
+            </div>
+            <div class="g-status" id="gs-clear"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Warna & Ukuran -->
+      <div class="card">
+        <div class="card-label">🎨 Warna & Ukuran</div>
+        <div class="color-grid">
+          <div class="color-swatch active" style="background:#4a7cf7" data-color="#4a7cf7"></div>
+          <div class="color-swatch" style="background:#4caf72" data-color="#4caf72"></div>
+          <div class="color-swatch" style="background:#f45f5f" data-color="#f45f5f"></div>
+          <div class="color-swatch" style="background:#f0b040" data-color="#f0b040"></div>
+          <div class="color-swatch" style="background:#a78bfa" data-color="#a78bfa"></div>
+          <div class="color-swatch" style="background:#f472b6" data-color="#f472b6"></div>
+          <div class="color-swatch" style="background:#22d3ee" data-color="#22d3ee"></div>
+          <div class="color-swatch" style="background:#ffffff" data-color="#ffffff"></div>
+        </div>
+        <div class="size-row">
+          <label>Ukuran titik:</label>
+          <input type="range" id="brush-size" min="2" max="20" value="6"/>
+          <span id="brush-val">6px</span>
+        </div>
+        <div class="size-row">
+          <label>Sensitivitas Z:</label>
+          <input type="range" id="z-sens" min="1" max="10" value="5"/>
+          <span id="z-val">5x</span>
+        </div>
+      </div>
+
+      <!-- Tombol aksi -->
+      <div class="card">
+        <div class="card-label">⚙️ Aksi</div>
+        <div class="btn-grid">
+          <button class="btn" onclick="undoStroke()">↩ Undo</button>
+          <button class="btn danger" onclick="clearAll()">🗑 Hapus</button>
+          <button class="btn accent" onclick="resetView()">⟳ Reset View</button>
+          <button class="btn" onclick="toggleAutoRotate()">🔄 <span id="ar-label">Auto Putar</span></button>
+        </div>
+      </div>
+
+      <!-- Info stats -->
+      <div class="card stats-card">
+        <div class="stat"><div class="stat-val" id="stat-strokes">0</div><div class="stat-label">Goresan</div></div>
+        <div class="stat"><div class="stat-val" id="stat-points">0</div><div class="stat-label">Titik</div></div>
+        <div class="stat"><div class="stat-val" id="fps-val">0</div><div class="stat-label">FPS</div></div>
+      </div>
+
+    </section>
+
+    <!-- Kanan: Kanvas 3D -->
+    <section class="canvas-section">
+      <canvas id="draw-canvas"></canvas>
+      <div id="canvas-hint">Mulai kamera dan arahkan tangan ke kamera untuk menggambar</div>
+      <div id="view-info">
+        <span>X: <b id="vi-x">0°</b></span>
+        <span>Y: <b id="vi-y">0°</b></span>
+        <span>Zoom: <b id="vi-z">1.0x</b></span>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<!-- Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="app.js"></script>
+</body>
+</html>
